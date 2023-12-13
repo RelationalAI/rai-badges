@@ -51,6 +51,8 @@ jobs:
         id: createJsonFile
         run: |
           badgeFileName="${{  github.event.inputs.badgeId  }}.json"
+          folderName=$(dirname "$badgeFileName")
+          mkdir -p "$folderName"
           echo '${{ needs.CreateBadgeJsonString.outputs.badgeJsonString }}' > "$badgeFileName"
           cat "$badgeFileName"
 
