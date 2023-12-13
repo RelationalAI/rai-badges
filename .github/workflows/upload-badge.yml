@@ -1,0 +1,74 @@
+name: Upload Badge
+
+on:
+  workflow_dispatch:
+    inputs:
+      label:
+        description: 'Label for the badge'
+        required: true
+        default: 'Build'
+      message:
+        description: 'Message for the badge'
+        required: true
+        default: 'Passing'
+      color:
+        description: 'Color for the badge'
+        required: true
+        default: 'green'
+      badgeId:
+        description: 'Id for the badge'
+        required: true
+        default: 'build'
+
+permissions:
+  contents: write
+
+
+jobs:
+
+  CreateBadgeJsonString:
+    runs-on: ubuntu-latest
+    outputs:
+      badgeJsonString: ${{ steps.createBadgeJsonString.outputs.badgeJsonString }}
+    steps:
+      - name: Create badge json string
+        id: createBadgeJsonString
+        run: |
+          jsonString="{\"label\": \"${{ github.event.inputs.label }}\", \"message\": \"${{ github.event.inputs.message }}\", \"color\": \"${{ github.event.inputs.color }}\"}"
+          echo $jsonString
+          echo "badgeJsonString=$jsonString" >> $GITHUB_OUTPUT
+
+  PushJsonFile:
+    needs: CreateBadgeJsonString
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: CreateJsonFile
+        id: createJsonFile
+        run: |
+          badgeFileName="${{  github.event.inputs.badgeId  }}.json"
+          echo '${{ needs.CreateBadgeJsonString.outputs.badgeJsonString }}' > "$badgeFileName"
+          cat "$badgeFileName"
+
+      - name: CommitFiles
+        run: |
+          git config --local user.email "actions@github.com"
+          git config --local user.name "GitHub Actions"
+          git add .
+          if [[ "$(git diff-index -p HEAD --)" != "" ]]; then
+            git commit -m "Add badge ${{ github.event.inputs.badgeId }}"
+            git push origin HEAD:main
+          else
+            echo "Badges unchanged. Skipping."
+          fi
+          
+          
+    
+
+
+
+          
